@@ -32,3 +32,8 @@ typedef struct {
 	t_board board;
 	t_player players[2];
 } t_game;
+
+
+t_board create_game();
+
+t_game create_map(t_board* board, t_color initial_hand[]);

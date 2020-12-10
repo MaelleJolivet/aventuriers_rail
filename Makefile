@@ -8,7 +8,7 @@ jeu: clientAPI.o TicketToRideAPI.o connexion.o
 clientAPI.o: clientAPI.c clientAPI.h
 	gcc -c clientAPI.c -Wall
 
-TicketToRide.o: clientAPI.h TicketToRideAPI.c TicketToRideAPI.h
+TicketToRideAPI.o: TicketToRideAPI.c TicketToRideAPI.h clientAPI.h
 	gcc -c TicketToRideAPI.c -Wall
 
 connexion.o: clientAPI.h TicketToRideAPI.h connexion.c connexion.h
