@@ -12,6 +12,7 @@
 #include "clientAPI.h"
 #include "connexion.h"
 
+//initialize connexion and create board with map + nb of cities + b of tracks
 t_board create_game() {
 	connectToServer("li1417-56.members.linode.com",1234,"Maeruh");
 	char* gameName = malloc(50*sizeof(char));
@@ -22,7 +23,7 @@ t_board create_game() {
 	return board;
 }
 
-
+//initialize the map : 1st player, cards face up, our hand, fill the map with the cities
 t_game create_map(t_board* board, t_color initial_hand[]) {
 	printf("cities : %d, tracks : %d\n", board->nbCities, board->nbTracks);
 	t_game game;
@@ -32,12 +33,14 @@ t_game create_map(t_board* board, t_color initial_hand[]) {
 	return game;
 }
 
+//create a player
 t_player create_player() {
 	t_player player;
 	player.cars = 45;
 	player.nbHand = 4;
-	player.hand = malloc(200*sizeof(t_color));
-	player.objectives = malloc(10*sizeof(t_objective));
+	player.nbObjectives = 0;
+	player.replay = 0;
+	player.legalMove = NORMAL_MOVE;
 	return player;
 }
 
@@ -51,45 +54,45 @@ int main () {
 	t_game game = create_map(&board, initial_hand);
 	
 	t_player me = create_player();
+	t_player opponent = create_player();
+	me.hand = malloc(200*sizeof(t_color));
+	me.objectives = malloc(10*sizeof(t_objective));
 
-	t_player opponent;
-	opponent.cars = 45;
 	
-	
-	t_return_code moveOpponent = NORMAL_MOVE;
-	t_return_code moveMe = NORMAL_MOVE;
-	t_move opp_move;
 	t_color card;
-	int replay_opp = 0;
-	int replay_me = 0;
 	
 	//Start game
-	while (moveOpponent == NORMAL_MOVE && moveMe == NORMAL_MOVE) {
+	while (opponent.legalMove == NORMAL_MOVE && me.legalMove == NORMAL_MOVE) {
 		printMap();
-		if (game.current_player == game.me && replay_me == 0) {
-			moveMe = drawBlindCard(&card);
-			replay_me = 1;
+		
+		if (game.current_player == game.me && me.replay == 0) {
+			me.legalMove = drawBlindCard(&card);
+			me.replay = 1;
 		}
-		else if (game.current_player == game.me && replay_me == 1) {
-			moveMe = drawBlindCard(&card);
-			replay_me = 0;
+		
+		else if (game.current_player == game.me && me.replay == 1) {
+			me.legalMove = drawBlindCard(&card);
+			me.replay = 0;
 			game.current_player = !(game.current_player);
 		}
-		else if (game.current_player == !(game.me) && replay_opp == 0) {
-			moveOpponent = getMove(&opp_move, &replay_opp);
+		
+		else if (game.current_player == !(game.me) && opponent.replay == 0) {
+			opponent.legalMove = getMove(&opponent.move, &opponent.replay);
 		}
-		else if (game.current_player == !(game.me) && replay_opp == 1) {
-			moveOpponent = getMove(&opp_move, &replay_opp);
+		
+		else if (game.current_player == !(game.me) && opponent.replay == 1) {
+			opponent.legalMove = getMove(&opponent.move, &opponent.replay);
 			game.current_player = !(game.current_player);
 		}
+		
 		printf("jezano\n");
 	}
 
 	
-	if (moveOpponent != 0) {
+	if (opponent.legalMove != 0) {
 		printf("Bot lost\n");
 	}
-	if (moveMe != 0) {
+	if (me.legalMove != 0) {
 		printf("Maeru lost\n");
 	}
 	

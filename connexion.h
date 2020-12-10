@@ -21,8 +21,11 @@ typedef struct {
 	int cars;
 	int nbHand;
 	int nbObjectives;
+	int replay;
 	t_color* hand;
 	t_objective* objectives; //malloc à 10 ?
+	t_return_code legalMove;
+	t_move move;
 } t_player;
 
 typedef struct {
