@@ -14,10 +14,10 @@
 
 //initialize connexion and create board with map + nb of cities + b of tracks
 t_board create_game() {
-	connectToServer("li1417-56.members.linode.com",1234,"Maeruh");
+	connectToServer("li1417-56.members.linode.com",1234,"Maeru");
 	char* gameName = malloc(50*sizeof(char));
 	t_board board;
-	waitForT2RGame("TRAINING DO_NOTHING map=small", gameName, &board.nbCities, &board.nbTracks);
+	waitForT2RGame("TRAINING DO_NOTHING map=small timeout=100", gameName, &board.nbCities, &board.nbTracks);
 	board.tracks = malloc(5*(board.nbTracks)*sizeof(int));
 	free(gameName);
 	return board;
@@ -44,6 +44,53 @@ t_player create_player() {
 	return player;
 }
 
+//ask and register our move
+void scanf_move(t_player* me) {
+	printf("What's your move?\n");
+	printf("b for drawBlindCard \nr for ClaimRoute \nd for drawCard \no for drawwObjectives \nc for choseObjectives\n");
+	t_move me_move;
+	char move = '\0';
+	
+	scanf("%c", &move);
+	
+	if (move == 'b') {
+		me_move.type = DRAW_BLIND_CARD;
+	}
+	else if (move == 'd') {
+		me_move.type = DRAW_CARD;
+		printf("color of the card u want in the deck? enter a number\n");
+		printf("p=1 w=2 b=3 y=4 o=5 n=6 g=7 m=8\n");
+		int color;
+		scanf("%d", &color);
+		me_move.drawCard.card = color;
+	}
+	else if (move == 'o') {
+		me_move.type = DRAW_OBJECTIVES;
+	}
+	else if (move == 'c') {
+		me_move.type = CHOOSE_OBJECTIVES;
+	}
+	else if (move == 'r') {
+		me_move.type = CLAIM_ROUTE;
+		int info;
+		printf("first city: number\n");
+		scanf("%d", &info);
+		me_move.claimRoute.city1 = info;
+		printf("second city: number\n");
+		scanf("%d", &info);
+		me_move.claimRoute.city2 = info;
+		printf("confirm color of the track: p=1 w=2 b=3 y=4 o=5 n=6 g=7 m=8\n");
+		scanf("%d", &info);
+		me_move.claimRoute.color = info;
+		printf("confirm nb of locomotives needed\n");
+		scanf("%d", &info);
+		me_move.claimRoute.nbLocomotives = info;
+	}
+	me->move = me_move;
+}
+
+//void play_move()
+
 
 int main () {
 	//Initialization and get map's info
@@ -68,12 +115,14 @@ int main () {
 		if (game.current_player == game.me && me.replay == 0) {
 			me.legalMove = drawBlindCard(&card);
 			me.replay = 1;
+			scanf_move(&me);
 		}
 		
 		else if (game.current_player == game.me && me.replay == 1) {
 			me.legalMove = drawBlindCard(&card);
 			me.replay = 0;
 			game.current_player = !(game.current_player);
+			scanf_move(&me);
 		}
 		
 		else if (game.current_player == !(game.me) && opponent.replay == 0) {
