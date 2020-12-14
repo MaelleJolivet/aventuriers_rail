@@ -47,94 +47,133 @@ t_player create_player() {
 //ask and register our move
 void scanf_move(t_player* me) {
 	printf("What's your move?\n");
-	printf("b for drawBlindCard \nr for ClaimRoute \nd for drawCard \no for drawwObjectives \nc for choseObjectives\n");
-	t_move me_move;
-	char move = '\0';
+	printf("1 for drawBlindCard \n5 for ClaimRoute \n2 for drawCard \n3 for drawObjectives \n4 for choseObjectives\n");
 	
-	scanf("%c", &move);
+	int move;
 	
-	if (move == 'b') {
-		me_move.type = DRAW_BLIND_CARD;
+	scanf("%d", &move);
+	
+	if (move == 1) {
+		me->move.type = DRAW_BLIND_CARD;
 	}
-	else if (move == 'd') {
-		me_move.type = DRAW_CARD;
+	else if (move == 2) {
+		me->move.type = DRAW_CARD;
 		printf("color of the card u want in the deck? enter a number\n");
-		printf("p=1 w=2 b=3 y=4 o=5 n=6 g=7 m=8\n");
+		printf("p=1 w=2 b=3 y=4 o=5 n=6 r=7 g=8 m=9\n");
 		int color;
 		scanf("%d", &color);
-		me_move.drawCard.card = color;
+		me->move.drawCard.card = color;
 	}
-	else if (move == 'o') {
-		me_move.type = DRAW_OBJECTIVES;
+	else if (move == 3) {
+		me->move.type = DRAW_OBJECTIVES;
 	}
-	else if (move == 'c') {
-		me_move.type = CHOOSE_OBJECTIVES;
+	else if (move == 4) {
+		me->move.type = CHOOSE_OBJECTIVES;
 	}
-	else if (move == 'r') {
-		me_move.type = CLAIM_ROUTE;
+	else if (move == 5) {
+		me->move.type = CLAIM_ROUTE;
 		int info;
 		printf("first city: number\n");
 		scanf("%d", &info);
-		me_move.claimRoute.city1 = info;
+		me->move.claimRoute.city1 = info;
 		printf("second city: number\n");
 		scanf("%d", &info);
-		me_move.claimRoute.city2 = info;
+		me->move.claimRoute.city2 = info;
 		printf("confirm color of the track: p=1 w=2 b=3 y=4 o=5 n=6 g=7 m=8\n");
 		scanf("%d", &info);
-		me_move.claimRoute.color = info;
+		me->move.claimRoute.color = info;
 		printf("confirm nb of locomotives needed\n");
 		scanf("%d", &info);
-		me_move.claimRoute.nbLocomotives = info;
+		me->move.claimRoute.nbLocomotives = info;
 	}
-	me->move = me_move;
+	else if (move == 0) {
+		me->legalMove = LOOSING_MOVE;
+	}
 }
 
-//void play_move()
+//play the chosen move
+void play_move(t_player* me, t_game* game) {
+	if (me->move.type == DRAW_BLIND_CARD) {
+		//is it a legal move + draw the card and stores it if it is
+		me->legalMove = drawBlindCard(&me->move.drawBlindCard.card);
+		for (int i = 0; i < 9; i++) {
+			if (me->move.drawBlindCard.card == i+1) {
+				me->hand[i].number++;
+			}
+		}
+		me->nbHand++;
+		me->replay = !(me->replay);
+		if (me->replay == 1) {
+			printf("\nNext round MUST be drawBlindCard or drawCard\n");
+		}
+	}
+	
+	else if (me->move.type == DRAW_CARD) {
+		me->legalMove = drawCard(me->move.drawCard.card, &game->faceUp[5]);
+		for (int i = 0; i < 9; i++) {
+			if (me->move.drawCard.card == i+1) {
+				me->hand[i].number++;
+			}
+		}
+		me->nbHand++;
+		if (me->move.drawCard.card != 9) {
+			me->replay = !(me->replay);
+		}
+		if (me->replay == 1 && me->move.drawCard.card != 9) {
+			printf("\nNext round MUST be drawBlindCard or drawCard\n");
+		}
+	}
+	
+}
 
 
 int main () {
 	//Initialization and get map's info
-	
 	t_board board = create_game();
 
 	t_color initial_hand[4];
 	t_game game = create_map(&board, initial_hand);
 	
+	//create players and initialize infos
 	t_player me = create_player();
 	t_player opponent = create_player();
-	me.hand = malloc(200*sizeof(t_color));
-	me.objectives = malloc(10*sizeof(t_objective));
-
 	
-	t_color card;
+	//additional info for me
+	//copy
+	for (int i = 0; i < 9; i++) {
+		me.hand[i].number = 0;
+		me.hand[i].color = i+1;
+		for (int j = 0; j < 4; j++) {
+			if (initial_hand[j] == i+1) {
+				me.hand[i].number++;
+			}
+		}
+	}
 	
 	//Start game
 	while (opponent.legalMove == NORMAL_MOVE && me.legalMove == NORMAL_MOVE) {
 		printMap();
 		
 		if (game.current_player == game.me && me.replay == 0) {
-			me.legalMove = drawBlindCard(&card);
-			me.replay = 1;
+			printf("me 1st round\n");
 			scanf_move(&me);
-		}
-		
-		else if (game.current_player == game.me && me.replay == 1) {
-			me.legalMove = drawBlindCard(&card);
-			me.replay = 0;
+			play_move(&me, &game);
+			if (me.replay == 1) {
+				printMap();
+				scanf_move(&me);
+				play_move(&me, &game);
+			}
 			game.current_player = !(game.current_player);
-			scanf_move(&me);
 		}
 		
 		else if (game.current_player == !(game.me) && opponent.replay == 0) {
 			opponent.legalMove = getMove(&opponent.move, &opponent.replay);
-		}
-		
-		else if (game.current_player == !(game.me) && opponent.replay == 1) {
-			opponent.legalMove = getMove(&opponent.move, &opponent.replay);
+			if (opponent.replay == 1) {
+				printMap();
+				opponent.legalMove = getMove(&opponent.move, &opponent.replay);
+			}
 			game.current_player = !(game.current_player);
 		}
-		
-		printf("jezano\n");
 	}
 
 	
@@ -145,8 +184,6 @@ int main () {
 		printf("Maeru lost\n");
 	}
 	
-	free(me.hand);
-	free(me.objectives);
 	closeConnection();
 	
 	return 0;
