@@ -14,7 +14,7 @@
 
 //initialize connexion and create board with map + nb of cities + b of tracks
 t_board create_game() {
-	connectToServer("li1417-56.members.linode.com",1234,"Maeru");
+	connectToServer("li1417-56.members.linode.com",1234,"Maeruh");
 	char* gameName = malloc(50*sizeof(char));
 	t_board board;
 	waitForT2RGame("TRAINING DO_NOTHING map=small timeout=100", gameName, &board.nbCities, &board.nbTracks);
@@ -44,18 +44,25 @@ t_player create_player() {
 	return player;
 }
 
+//display the two cities to claim, and the score given (substracted) if success (failure)
+void display_objectives(t_objective obj) {
+	printf("city 1 : %d\t", obj.city1);
+	printf("city 2 : %d\t", obj.city2);
+	printf("score : %d\n", obj.score);
+}
+
 //ask and register our move
 void scanf_move(t_player* me) {
 	printf("What's your move?\n");
-	printf("1 for drawBlindCard \n5 for ClaimRoute \n2 for drawCard \n3 for drawObjectives \n4 for choseObjectives\n");
+	printf("1 for drawBlindCard \n2 for drawCard \n3 for drawObjectives \n4 for choseObjectives\n5 for ClaimRoute \n");
 	
 	int move;
-	
 	scanf("%d", &move);
 	
 	if (move == 1) {
 		me->move.type = DRAW_BLIND_CARD;
 	}
+	
 	else if (move == 2) {
 		me->move.type = DRAW_CARD;
 		printf("color of the card u want in the deck? enter a number\n");
@@ -64,12 +71,25 @@ void scanf_move(t_player* me) {
 		scanf("%d", &color);
 		me->move.drawCard.card = color;
 	}
+	
 	else if (move == 3) {
 		me->move.type = DRAW_OBJECTIVES;
 	}
+	
 	else if (move == 4) {
 		me->move.type = CHOOSE_OBJECTIVES;
+		me->move.chooseObjectives.nbObjectives = 0;
+		int infoBis;
+		printf("Which objectives do you choose ? send 3 numbers : 0/1 for each one\n");
+		for (int i = 0; i < 3; i++) {
+			scanf("%d", &infoBis);
+			me->move.chooseObjectives.chosen[i] = infoBis;
+			if (infoBis == 1) {
+				me->move.chooseObjectives.nbObjectives++;
+			}
+		}
 	}
+	
 	else if (move == 5) {
 		me->move.type = CLAIM_ROUTE;
 		int info;
@@ -124,6 +144,25 @@ void play_move(t_player* me, t_game* game) {
 		}
 	}
 	
+	else if (me->move.type == DRAW_OBJECTIVES) {
+		me->legalMove = drawObjectives(me->move.drawObjectives.objectives);
+		for (int i = 0; i < 3; i++) {
+			display_objectives(me->move.drawObjectives.objectives[i]);
+		}
+		printf("\nNext round MUST be choseObjectives\n");
+		me->replay = !(me->replay);
+	}
+	
+	else if (me->move.type == CHOOSE_OBJECTIVES) {
+		me->legalMove = chooseObjectives(&me->move.chooseObjectives.chosen[3]);
+		for (int i = 0; i < 3; i++) {
+			if (me->move.chooseObjectives.chosen[i] == 1) {
+				me->objectives[i] = me->move.drawObjectives.objectives[i];
+				display_objectives(me->objectives[i]);
+			}
+		}
+		me->replay = 0;
+	}
 }
 
 
@@ -150,7 +189,7 @@ int main () {
 		}
 	}
 	
-	//Start game
+	//Play the game as long as no one loses or wins (LOOSING_MOVE or WINNING_MOVE)
 	while (opponent.legalMove == NORMAL_MOVE && me.legalMove == NORMAL_MOVE) {
 		printMap();
 		
