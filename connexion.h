@@ -28,7 +28,8 @@ typedef struct {
 	int nbObjectives;
 	int replay;
 	t_hand hand[9]; //9 different possible card colors
-	t_objective objectives[3]; //malloc à 10 ?
+	t_objective temporary_obj[3]; //stores drawn objectives array, before chosing the ones to keep in objectives
+	t_objective* objectives; //malloc
 	t_return_code legalMove;
 	t_move move;
 } t_player;
