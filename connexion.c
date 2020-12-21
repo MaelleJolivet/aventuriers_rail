@@ -17,8 +17,8 @@ t_board create_game() {
 	connectToServer("li1417-56.members.linode.com",5678,"Maeru");
 	char* gameName = malloc(50*sizeof(char));
 	t_board board;
-	//map=small
-	waitForT2RGame("TRAINING DO_NOTHING timeout=100", gameName, &board.nbCities, &board.nbTracks);
+	//map=small DO_NOTHING
+	waitForT2RGame("TRAINING PLAY_RANDOM timeout=100", gameName, &board.nbCities, &board.nbTracks);
 	printf("gameName : %s\n", gameName);
 	board.tracks = malloc(5*(board.nbTracks)*sizeof(int));
 	free(gameName);
@@ -86,19 +86,8 @@ void scanf_move(t_player* me) {
 	
 	else if (move == 5) {
 		me->move.type = CLAIM_ROUTE;
-		int info;
-		printf("first city: number\n");
-		scanf("%d", &info);
-		me->move.claimRoute.city1 = info;
-		printf("second city: number\n");
-		scanf("%d", &info);
-		me->move.claimRoute.city2 = info;
-		printf("confirm color of the track: p=1 w=2 b=3 y=4 o=5 n=6 g=7 m=8\n");
-		scanf("%d", &info);
-		me->move.claimRoute.color = info;
-		printf("confirm nb of locomotives needed\n");
-		scanf("%d", &info);
-		me->move.claimRoute.nbLocomotives = info;
+		printf("first city, second city, color of the track, extra locomotives ?\n");
+		scanf("%d %d %d %d", &me->move.claimRoute.city1, &me->move.claimRoute.city2, &me->move.claimRoute.color, &me->move.claimRoute.nbLocomotives);
 	}
 	
 	else if (move == 0) {
@@ -166,6 +155,18 @@ void play_move(t_player* me, t_game* game) {
 		}
 		me->nbObjectives += me->move.chooseObjectives.nbObjectives;
 		me->replay = 0;
+	}
+	
+	//CLAIM_ROUTE
+	else if (me->move.type == CLAIM_ROUTE) {
+		me->legalMove = claimRoute(me->move.claimRoute.city1, me->move.claimRoute.city2, me->move.claimRoute.color, me->move.claimRoute.nbLocomotives);
+		
+		
+		
+		
+		
+		
+		
 	}
 }
 
