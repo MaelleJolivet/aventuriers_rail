@@ -30,9 +30,70 @@ t_game create_map(t_board* board, t_color initial_hand[]) {
 	printf("cities : %d, tracks : %d\n", board->nbCities, board->nbTracks);
 	t_game game;
 	game.me = getMap(board->tracks, game.faceUp, initial_hand);
+	
+	//info for first route
+	for (int i = 0; i < 5; i++) {
+		//printf("%d\t", board->tracks[i]);
+	}
+	
 	game.board = *board;
 	game.current_player = 0;
 	return game;
+}
+
+//display the two cities to claim, and the score given (substracted) if success (failure)
+void display_objectives(t_objective obj) {
+	printf("city 1 : %d\t", obj.city1);
+	printf("city 2 : %d\t", obj.city2);
+	printf("score : %d\n", obj.score);
+}
+
+//print a route's info
+void display_route(t_route route) {
+	printf("city 1 : %d\t", route.city1);
+	printf("city 2 : %d\n", route.city2);
+	printf("cars needed : %d\t", route.cars);
+	printf("first color : %d\t", route.color1);
+	printf("second color : %d\t", route.color2);
+	printf("whom : %d\n", route.free);
+}
+
+//fills the 2D array of t_route pointers (to get all routes' info)
+void array_routes(t_route* routes[35][35], t_board* board) {
+	for (int line = 0; line < 36; line++) {
+		for (int column = 0; column < 36; column++) {
+			routes[line][column] = NULL;
+		}
+	}
+	
+	t_route route_temp;
+	int city1, city2;
+	// [(city1, city2, cars, color1, color2), (city1, city2, cars, color1, color2),...]
+	
+	for (int i = 0; i < 5*board->nbTracks; i+=5) {
+		city1 = board->tracks[i];
+		city2 = board->tracks[i+1];
+		
+		route_temp.city1 = city1;
+		//printf("city1 %d\t", route_temp.city1);
+
+		route_temp.city2 = city2;
+		//printf("city2 %d\t", route_temp.city2);
+
+		route_temp.cars = board->tracks[i+2];
+		//printf("cars %d\t", route_temp.cars);
+
+		route_temp.color1 = board->tracks[i+3];
+		//printf("color1 %d\t", route_temp.color1);
+
+		route_temp.color2 = board->tracks[i+4];
+		//printf("color2 %d\n", route_temp.color2);
+
+		route_temp.free = 2;
+		
+		routes[city1][city2] = &route_temp;
+		routes[city2][city1] = &route_temp;
+	}
 }
 
 //create a player
@@ -44,13 +105,6 @@ t_player create_player() {
 	player.replay = 0;
 	player.legalMove = NORMAL_MOVE;
 	return player;
-}
-
-//display the two cities to claim, and the score given (substracted) if success (failure)
-void display_objectives(t_objective obj) {
-	printf("city 1 : %d\t", obj.city1);
-	printf("city 2 : %d\t", obj.city2);
-	printf("score : %d\n", obj.score);
 }
 
 //ask and register our move
@@ -85,6 +139,9 @@ void scanf_move(t_player* me) {
 	}
 	
 	else if (move == 5) {
+		for (int i = 0; i < me->nbObjectives; i++) {
+			display_objectives(me->objectives[i]);
+		}
 		me->move.type = CLAIM_ROUTE;
 		printf("first city, second city, color of the track, extra locomotives ?\n");
 		scanf("%d %d %d %d", &me->move.claimRoute.city1, &me->move.claimRoute.city2, &me->move.claimRoute.color, &me->move.claimRoute.nbLocomotives);
@@ -161,12 +218,6 @@ void play_move(t_player* me, t_game* game) {
 	else if (me->move.type == CLAIM_ROUTE) {
 		me->legalMove = claimRoute(me->move.claimRoute.city1, me->move.claimRoute.city2, me->move.claimRoute.color, me->move.claimRoute.nbLocomotives);
 		
-		
-		
-		
-		
-		
-		
 	}
 }
 
@@ -178,6 +229,12 @@ int main () {
 	t_color initial_hand[4];
 	t_game game = create_map(&board, initial_hand);
 	
+	//array 2D of t_route pointers => 36 cities
+	//ex: routes[0][8] & routes[8][0] are pointers to the same t_route, who contains all the route's info
+	//this array needs to be filled
+	t_route* routes[35][35];
+	array_routes(routes, &board);
+		
 	//create players and initialize infos
 	t_player me = create_player();
 	t_player opponent = create_player();
@@ -228,6 +285,7 @@ int main () {
 		printf("Maeru lost\n");
 	}
 	
+	free(board.tracks);
 	free(me.objectives);
 	closeConnection();
 	
