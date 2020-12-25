@@ -14,7 +14,7 @@
 
 //initialize connexion and create board with map + nb of cities + nb of tracks
 t_board create_game() {
-	connectToServer("li1417-56.members.linode.com",5678,"Maeru");
+	connectToServer("li1417-56.members.linode.com",1234,"Maeru");
 	char* gameName = malloc(50*sizeof(char));
 	t_board board;
 	//map=small DO_NOTHING
@@ -27,7 +27,6 @@ t_board create_game() {
 
 //initialize the map : 1st player, cards face up, our hand, fill the map with the cities
 t_game create_map(t_board* board, t_color initial_hand[]) {
-	printf("cities : %d, tracks : %d\n", board->nbCities, board->nbTracks);
 	t_game game;
 	game.me = getMap(board->tracks, game.faceUp, initial_hand);
 	
@@ -41,61 +40,6 @@ t_game create_map(t_board* board, t_color initial_hand[]) {
 	return game;
 }
 
-//display the two cities to claim, and the score given (substracted) if success (failure)
-void display_objectives(t_objective obj) {
-	printf("city 1 : %d\t", obj.city1);
-	printf("city 2 : %d\t", obj.city2);
-	printf("score : %d\n", obj.score);
-}
-
-//print a route's info
-void display_route(t_route route) {
-	printf("city 1 : %d\t", route.city1);
-	printf("city 2 : %d\n", route.city2);
-	printf("cars needed : %d\t", route.cars);
-	printf("first color : %d\t", route.color1);
-	printf("second color : %d\t", route.color2);
-	printf("whom : %d\n", route.free);
-}
-
-//fills the 2D array of t_route pointers (to get all routes' info)
-void array_routes(t_route* routes[35][35], t_board* board) {
-	for (int line = 0; line < 36; line++) {
-		for (int column = 0; column < 36; column++) {
-			routes[line][column] = NULL;
-		}
-	}
-	
-	t_route route_temp;
-	int city1, city2;
-	// [(city1, city2, cars, color1, color2), (city1, city2, cars, color1, color2),...]
-	
-	for (int i = 0; i < 5*board->nbTracks; i+=5) {
-		city1 = board->tracks[i];
-		city2 = board->tracks[i+1];
-		
-		route_temp.city1 = city1;
-		//printf("city1 %d\t", route_temp.city1);
-
-		route_temp.city2 = city2;
-		//printf("city2 %d\t", route_temp.city2);
-
-		route_temp.cars = board->tracks[i+2];
-		//printf("cars %d\t", route_temp.cars);
-
-		route_temp.color1 = board->tracks[i+3];
-		//printf("color1 %d\t", route_temp.color1);
-
-		route_temp.color2 = board->tracks[i+4];
-		//printf("color2 %d\n", route_temp.color2);
-
-		route_temp.free = 2;
-		
-		routes[city1][city2] = &route_temp;
-		routes[city2][city1] = &route_temp;
-	}
-}
-
 //create a player
 t_player create_player() {
 	t_player player;
@@ -105,6 +49,52 @@ t_player create_player() {
 	player.replay = 0;
 	player.legalMove = NORMAL_MOVE;
 	return player;
+}
+
+//display the two cities to claim, and the score given (substracted) if success (failure)
+void display_objectives(t_objective* obj) {
+	printf("city 1 : %d  city 2 : %d  score : %d\n", obj->city1, obj->city2, obj->score);
+}
+
+//print my numbers of cars, cards and objectives
+void display_my_info(t_player* me) {
+	printf("cars : %d  nbHand : %d  nbObjectives : %d\n", me->cars, me->nbHand, me->nbObjectives);
+}
+
+//print a route's info
+void display_route(t_route* route) {
+	if (route->exist) {
+		printf("city 1 : %d  city 2 : %d\n", route->city1, route->city2);
+		printf("cars needed : %d  first color : %d", route->cars, route->color1);
+		printf("  second color : %d  whom : %d\n", route->color2, route->free);
+	}
+	else {
+		printf("route doesn't exist\n");
+	}
+}
+
+//fills the 2D array of t_route (to get all routes' info)
+void array_routes(t_route routes[36][36], t_board* board) {
+	for (int line = 0; line < 36; line++) {
+		for (int column = 0; column < 36; column++) {
+			routes[line][column].exist = 0;
+		}
+	}
+	
+	int city1, city2; // [(city1, city2, cars, color1, color2), (city1, city2, cars, color1, color2),...]
+	
+	for (int i = 0; i < 5*board->nbTracks; i+=5) {
+		city1 = board->tracks[i];
+		city2 = board->tracks[i+1];
+		routes[city1][city2].exist = 1;
+		routes[city1][city2].city1 = city1;
+		routes[city1][city2].city2 = city2;
+		routes[city1][city2].cars = board->tracks[i+2];
+		routes[city1][city2].color1 = board->tracks[i+3];
+		routes[city1][city2].color2 = board->tracks[i+4];
+		routes[city1][city2].free = 2;
+		routes[city2][city1] = routes[city1][city2];
+	}
 }
 
 //ask and register our move
@@ -140,7 +130,7 @@ void scanf_move(t_player* me) {
 	
 	else if (move == 5) {
 		for (int i = 0; i < me->nbObjectives; i++) {
-			display_objectives(me->objectives[i]);
+			display_objectives(&me->objectives[i]);
 		}
 		me->move.type = CLAIM_ROUTE;
 		printf("first city, second city, color of the track, extra locomotives ?\n");
@@ -152,8 +142,8 @@ void scanf_move(t_player* me) {
 	}
 }
 
-//play the chosen move
-void play_move(t_player* me, t_game* game) {
+//play the chosen move && update my info
+void play_move(t_player* me, t_game* game, t_route routes[36][36], t_board* board) {
 	
 	//DRAW_BLIND_CARD
 	if (me->move.type == DRAW_BLIND_CARD) {
@@ -192,7 +182,7 @@ void play_move(t_player* me, t_game* game) {
 	else if (me->move.type == DRAW_OBJECTIVES) {
 		me->legalMove = drawObjectives(me->move.drawObjectives.objectives);
 		for (int i = 0; i < 3; i++) {
-			display_objectives(me->move.drawObjectives.objectives[i]);
+			display_objectives(&me->move.drawObjectives.objectives[i]);
 			me->temporary_obj[i] = me->move.drawObjectives.objectives[i];
 		}
 		printf("\nNext round MUST be choseObjectives\n");
@@ -207,7 +197,7 @@ void play_move(t_player* me, t_game* game) {
 			if (me->move.chooseObjectives.chosen[i] == 1) {
 				me->move.chooseObjectives.nbObjectives++;
 				me->objectives[i] = me->temporary_obj[i];
-				display_objectives(me->objectives[i]);
+				display_objectives(&me->objectives[i]);
 			}
 		}
 		me->nbObjectives += me->move.chooseObjectives.nbObjectives;
@@ -216,8 +206,22 @@ void play_move(t_player* me, t_game* game) {
 	
 	//CLAIM_ROUTE
 	else if (me->move.type == CLAIM_ROUTE) {
-		me->legalMove = claimRoute(me->move.claimRoute.city1, me->move.claimRoute.city2, me->move.claimRoute.color, me->move.claimRoute.nbLocomotives);
+		int city1 = me->move.claimRoute.city1;
+		int city2 = me->move.claimRoute.city2;
 		
+		me->legalMove = claimRoute(city1, city2, me->move.claimRoute.color, me->move.claimRoute.nbLocomotives);
+		
+		routes[city1][city2].free = game->me;
+		
+		int used_color_cars = routes[city1][city2].cars;
+		int used_loco = me->move.claimRoute.nbLocomotives;
+		
+		me->cars -= used_color_cars;
+		me->hand[me->move.claimRoute.color].number -= used_color_cars;
+		me->hand[me->move.claimRoute.nbLocomotives].number -= used_loco;
+		me->nbHand -= (used_loco + used_color_cars);
+		display_my_info(me);
+		me->replay = 0;
 	}
 }
 
@@ -229,12 +233,11 @@ int main () {
 	t_color initial_hand[4];
 	t_game game = create_map(&board, initial_hand);
 	
-	//array 2D of t_route pointers => 36 cities
-	//ex: routes[0][8] & routes[8][0] are pointers to the same t_route, who contains all the route's info
-	//this array needs to be filled
-	t_route* routes[35][35];
+	//array 2D of t_route => 36 cities
+	//ex: routes[0][8] & routes[8][0] are the same t_route, who contains all the route's info
+	t_route routes[36][36];
 	array_routes(routes, &board);
-		
+
 	//create players and initialize infos
 	t_player me = create_player();
 	t_player opponent = create_player();
@@ -253,31 +256,29 @@ int main () {
 	
 	//Play the game as long as no one loses or wins (LOOSING_MOVE or WINNING_MOVE)
 	while (opponent.legalMove == NORMAL_MOVE && me.legalMove == NORMAL_MOVE) {
-		printMap();
-		
 		if (game.current_player == game.me && me.replay == 0) {
+			printMap();
 			printf("me 1st round\n");
 			scanf_move(&me);
-			play_move(&me, &game);
+			play_move(&me, &game, routes, &board);
 			if (me.replay == 1) {
 				printMap();
 				scanf_move(&me);
-				play_move(&me, &game);
+				play_move(&me, &game, routes, &board);
 			}
 			game.current_player = !(game.current_player);
 		}
 		
 		else if (game.current_player == !(game.me) && opponent.replay == 0) {
+			printMap();
 			opponent.legalMove = getMove(&opponent.move, &opponent.replay);
 			if (opponent.replay == 1) {
-				printMap();
 				opponent.legalMove = getMove(&opponent.move, &opponent.replay);
 			}
 			game.current_player = !(game.current_player);
 		}
 	}
 
-	
 	if (opponent.legalMove != 0) {
 		printf("Bot lost\n");
 	}
