@@ -128,6 +128,8 @@ void play_move(t_player* me, t_game* game, t_route routes[36][36], t_board* boar
 		me->legalMove = claimRoute(city1, city2, me->move.claimRoute.color, me->move.claimRoute.nbLocomotives);
 		
 		routes[city1][city2].free = game->me;
+		routes[city2][city1].free = game->me;
+
 		
 		int used_color_cars = routes[city1][city2].cars;
 		int used_loco = me->move.claimRoute.nbLocomotives;
@@ -160,6 +162,7 @@ int main () {
 	
 	//additional info for me
 	me.objectives = malloc(10*sizeof(t_objective));
+	
 	for (int i = 0; i < 9; i++) {
 		me.hand[i].number = 0;
 		me.hand[i].color = i+1;
@@ -170,18 +173,39 @@ int main () {
 		}
 	}
 	
+	int first_round = 1;
+
 	//Play the game as long as no one loses or wins (LOOSING_MOVE or WINNING_MOVE)
 	while (opponent.legalMove == NORMAL_MOVE && me.legalMove == NORMAL_MOVE) {
+		
+		//begin smart play => first 2 moves HAVE to be draw&choose objectives
 		if (game.current_player == game.me && me.replay == 0) {
-			printMap();
-			printf("me 1st round\n");
-			scanf_move(&me);
-			play_move(&me, &game, routes, &board);
-			if (me.replay == 1) {
+			if (first_round == 1) {
 				printMap();
+				printf("1st move is Draw Objectives\n");
+				me.move.type = DRAW_OBJECTIVES;
+				play_move(&me, &game, routes, &board);
+				
+				printMap();
+				printf("2nd move is Choose Objectives (at least 2)\n");
 				scanf_move(&me);
 				play_move(&me, &game, routes, &board);
+				
+				first_round = 0;
 			}
+			
+			else {
+				printMap();
+				printf("me 1st round\n");
+				scanf_move(&me);
+				play_move(&me, &game, routes, &board);
+				if (me.replay == 1) {
+					printMap();
+					scanf_move(&me);
+					play_move(&me, &game, routes, &board);
+				}
+			}
+			
 			game.current_player = !(game.current_player);
 		}
 		

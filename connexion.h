@@ -38,7 +38,7 @@ typedef struct {
 	int exist;
 	int city1;
 	int city2;
-	int cars;
+	int cars; //lenght
 	int color1;
 	int color2;
 	int free; //0, 1 or 2 (ex: i own the route : free = game.me ; the route is free free = 2)
@@ -81,3 +81,8 @@ void scanf_move(t_player* me);
 void play_move(t_player* me, t_game* game, t_route routes[36][36], t_board* board);
 
 
+int distanceMini (int distances[36], int visited[36]);
+
+void dijkstra (int source, int destination, t_game* game, t_route routes[36][36], int distances[36], int previous[36]);
+
+int storeSourcetoDest (int source, int destination, int previous[36], int sourceToDest[78], t_route routes[36][36]);
