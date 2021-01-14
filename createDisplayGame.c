@@ -15,8 +15,8 @@ t_board create_game() {
 	connectToServer("li1417-56.members.linode.com",1234,"Maeru");
 	char* gameName = malloc(50*sizeof(char));
 	t_board board;
-	//map=small DO_NOTHING
-	waitForT2RGame("TRAINING PLAY_RANDOM timeout=100", gameName, &board.nbCities, &board.nbTracks);
+	//map=small DO_NOTHING PLAY_RANDOM NICE_BOT
+	waitForT2RGame("TRAINING NICE_BOT timeout=50", gameName, &board.nbCities, &board.nbTracks);
 	printf("gameName : %s\n", gameName);
 	board.tracks = malloc(5*(board.nbTracks)*sizeof(int));
 	free(gameName);
@@ -82,6 +82,7 @@ void array_routes(t_route routes[36][36], t_board* board) {
 	int city1, city2; // [(city1, city2, cars, color1, color2), (city1, city2, cars, color1, color2),...]
 	
 	for (int i = 0; i < 5*board->nbTracks; i+=5) {
+		
 		city1 = board->tracks[i];
 		city2 = board->tracks[i+1];
 		routes[city1][city2].exist = 1;
@@ -91,7 +92,9 @@ void array_routes(t_route routes[36][36], t_board* board) {
 		routes[city1][city2].color1 = board->tracks[i+3];
 		routes[city1][city2].color2 = board->tracks[i+4];
 		routes[city1][city2].free = 2;
+		
 		routes[city2][city1] = routes[city1][city2];
+		
 	}
 }
 

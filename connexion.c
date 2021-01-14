@@ -12,138 +12,6 @@
 #include "clientAPI.h"
 #include "connexion.h"
 
-
-//ask and register our move
-void scanf_move(t_player* me) {
-	printf("What's your move?\n");
-	printf("1 for drawBlindCard \n2 for drawCard \n3 for drawObjectives \n4 for choseObjectives\n5 for ClaimRoute \n");
-	int move;
-	scanf("%d", &move);
-	
-	if (move == 1) {
-		me->move.type = DRAW_BLIND_CARD;
-	}
-	
-	else if (move == 2) {
-		me->move.type = DRAW_CARD;
-		printf("color of the card u want in the deck? enter a number\n");
-		printf("p=1 w=2 b=3 y=4 o=5 n=6 r=7 g=8 m=9\n");
-		int color;
-		scanf("%d", &color);
-		me->move.drawCard.card = color;
-	}
-	
-	else if (move == 3) {
-		me->move.type = DRAW_OBJECTIVES;
-	}
-	
-	else if (move == 4) {
-		me->move.type = CHOOSE_OBJECTIVES;
-		me->move.chooseObjectives.nbObjectives = 0;
-		printf("Which objectives do you choose ? send 3 numbers : 0/1 for each one\n");
-		scanf("%d %d %d", &me->move.chooseObjectives.chosen[0], &me->move.chooseObjectives.chosen[1], &me->move.chooseObjectives.chosen[2]);
-	}
-	
-	else if (move == 5) {
-		for (int i = 0; i < me->nbObjectives; i++) {
-			display_objectives(&me->objectives[i]);
-		}
-		me->move.type = CLAIM_ROUTE;
-		printf("first city, second city, color of the track, extra locomotives ?\n");
-		scanf("%d %d %d %d", &me->move.claimRoute.city1, &me->move.claimRoute.city2, &me->move.claimRoute.color, &me->move.claimRoute.nbLocomotives);
-	}
-	
-	else if (move == 0) {
-		me->legalMove = LOOSING_MOVE;
-	}
-}
-
-//play the chosen move && update my info
-void play_move(t_player* me, t_game* game, t_route routes[36][36], t_board* board) {
-	
-	//DRAW_BLIND_CARD
-	if (me->move.type == DRAW_BLIND_CARD) {
-		//is it a legal move + draw the card and stores it if it is
-		me->legalMove = drawBlindCard(&me->move.drawBlindCard.card);
-		for (int i = 0; i < 9; i++) {
-			if (me->move.drawBlindCard.card == i+1) {
-				me->hand[i].number++;
-			}
-		}
-		me->nbHand++;
-		me->replay = !(me->replay);
-		if (me->replay == 1) {
-			printf("\nNext round MUST be drawBlindCard or drawCard\n");
-		}
-	}
-	
-	//DRAW_CARD
-	else if (me->move.type == DRAW_CARD) {
-		me->legalMove = drawCard(me->move.drawCard.card, &game->faceUp[5]);
-		for (int i = 0; i < 9; i++) {
-			if (me->move.drawCard.card == i+1) {
-				me->hand[i].number++;
-			}
-		}
-		me->nbHand++;
-		if (me->move.drawCard.card != 9) {
-			me->replay = !(me->replay);
-		}
-		if (me->replay == 1 && me->move.drawCard.card != 9) {
-			printf("\nNext round MUST be drawBlindCard or drawCard\n");
-		}
-	}
-	
-	//DRAW_OBJECTIVES
-	else if (me->move.type == DRAW_OBJECTIVES) {
-		me->legalMove = drawObjectives(me->move.drawObjectives.objectives);
-		for (int i = 0; i < 3; i++) {
-			display_objectives(&me->move.drawObjectives.objectives[i]);
-			me->temporary_obj[i] = me->move.drawObjectives.objectives[i];
-		}
-		printf("\nNext round MUST be choseObjectives\n");
-		me->replay = !(me->replay);
-	}
-	
-	//CHOOSE_OBJECTIVES
-	else if (me->move.type == CHOOSE_OBJECTIVES) {
-		me->legalMove = chooseObjectives(me->move.chooseObjectives.chosen);
-		
-		for (int i = me->nbObjectives; i < me->nbObjectives+3; i++) {
-			if (me->move.chooseObjectives.chosen[i] == 1) {
-				me->move.chooseObjectives.nbObjectives++;
-				me->objectives[i] = me->temporary_obj[i];
-				display_objectives(&me->objectives[i]);
-			}
-		}
-		me->nbObjectives += me->move.chooseObjectives.nbObjectives;
-		me->replay = 0;
-	}
-	
-	//CLAIM_ROUTE
-	else if (me->move.type == CLAIM_ROUTE) {
-		int city1 = me->move.claimRoute.city1;
-		int city2 = me->move.claimRoute.city2;
-		
-		me->legalMove = claimRoute(city1, city2, me->move.claimRoute.color, me->move.claimRoute.nbLocomotives);
-		
-		routes[city1][city2].free = game->me;
-		routes[city2][city1].free = game->me;
-
-		
-		int used_color_cars = routes[city1][city2].cars;
-		int used_loco = me->move.claimRoute.nbLocomotives;
-		
-		me->cars -= used_color_cars;
-		me->hand[me->move.claimRoute.color].number -= used_color_cars;
-		me->hand[me->move.claimRoute.nbLocomotives].number -= used_loco;
-		me->nbHand -= (used_loco + used_color_cars);
-		display_my_info(me);
-		me->replay = 0;
-	}
-}
-
-
 int main () {
 	//Initialization and get map's info
 	t_board board = create_game();
@@ -174,6 +42,14 @@ int main () {
 	}
 	
 	int first_round = 1;
+	
+	//after dijkstra, stores the routes we want for each objectives
+	//for me.objectives[0] and me.objectives[1]
+	int lenght_routes_for_0, lenght_routes_for_1;
+	int routes_objective_0[78], routes_objective_1[78];
+	int distances_0[36], distances_1[36];
+	int previous_0[36], previous_1[36];
+	
 
 	//Play the game as long as no one loses or wins (LOOSING_MOVE or WINNING_MOVE)
 	while (opponent.legalMove == NORMAL_MOVE && me.legalMove == NORMAL_MOVE) {
@@ -186,27 +62,35 @@ int main () {
 				me.move.type = DRAW_OBJECTIVES;
 				play_move(&me, &game, routes, &board);
 				
-				printMap();
-				printf("2nd move is Choose Objectives (at least 2)\n");
-				scanf_move(&me);
+				me.move.type = CHOOSE_OBJECTIVES;
+				me.move.chooseObjectives.nbObjectives = 0;
+				me.move.chooseObjectives.chosen[0] = 1;
+				me.move.chooseObjectives.chosen[1] = 1;
+				me.move.chooseObjectives.chosen[2] = 0;
 				play_move(&me, &game, routes, &board);
 				
 				first_round = 0;
+				
+				//immediatly run the shorter paths algo to found which routes we want
+				
+				//1st objective
+				dijkstra(me.objectives[0].city1, me.objectives[0].city2, &game, routes, distances_0, previous_0);
+				
+				lenght_routes_for_0 = storeSourcetoDest(me.objectives[0].city1, me.objectives[0].city2, previous_0, routes_objective_0, routes);
+				
+				
+				//2nd objective
+				dijkstra(me.objectives[1].city1, me.objectives[1].city2, &game, routes, distances_1, previous_1);
+				
+				lenght_routes_for_1 = storeSourcetoDest(me.objectives[1].city1, me.objectives[1].city2, previous_1, routes_objective_1, routes);
 			}
 			
 			else {
-				printMap();
-				printf("me 1st round\n");
-				scanf_move(&me);
-				play_move(&me, &game, routes, &board);
-				if (me.replay == 1) {
-					printMap();
-					scanf_move(&me);
-					play_move(&me, &game, routes, &board);
-				}
+				what_to_play(&me, &game, routes, &board);
 			}
 			
 			game.current_player = !(game.current_player);
+
 		}
 		
 		else if (game.current_player == !(game.me) && opponent.replay == 0) {

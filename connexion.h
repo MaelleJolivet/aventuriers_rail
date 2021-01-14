@@ -77,6 +77,9 @@ void array_routes(t_route routes[36][36], t_board* board);
 //ask and register our move
 void scanf_move(t_player* me);
 
+//smart move to send to play_move
+void what_to_play(t_player* me, t_game* game, t_route routes[36][36], t_board* board);
+
 //play the chosen move
 void play_move(t_player* me, t_game* game, t_route routes[36][36], t_board* board);
 
