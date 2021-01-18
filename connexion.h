@@ -78,7 +78,8 @@ void array_routes(t_route routes[36][36], t_board* board);
 void scanf_move(t_player* me);
 
 //smart move to send to play_move
-void what_to_play(t_player* me, t_game* game, t_route routes[36][36], t_board* board);
+void what_to_play(t_player* me, t_game* game, t_route routes[36][36], t_board* board, int route0[20], int lenght0, int* left0, int route1[20], int lenght1, int* left1);
+//, int route2[20], int lenght2, int* left2
 
 //play the chosen move
 void play_move(t_player* me, t_game* game, t_route routes[36][36], t_board* board);

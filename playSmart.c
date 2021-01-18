@@ -24,14 +24,15 @@ DONE	 => find which routes we HAVE to take to complete the objectives :
 			-> fastest (less rounds) ?
 
 		 THEN at each round
+		 => if the oppenent took a route, recalculate the shortest route
 		 => check if we have completed (an) objective(s)
 			-> if yes :
 				- if the game is far from over, take a new one
-		 => if we have enough cards to take a route we want, we take it
+DONE	 => if we have enough cards to take a route we want, we take it
 			-> if we can take several routes, choose the highest in points ?
 		 => else, we pick cards to help us take the routes we want
 			-> faceUp if we are interested
-			-> blindCard else
+DONE		-> blindCard else
 		 
 		 
 		 Lenght of a route : number of wagons needed ? or number of smaller routes to take ? or both ?
@@ -87,6 +88,8 @@ void dijkstra (int source, int destination, t_game* game, t_route routes[36][36]
 			//exists + free = unvisited + current distance from source is bigger than the proposition
 			if (visited[j] == 0 && routes[u][j].exist == 1 && routes[u][j].free == 2 && ((distances[u] + routes[u][j].cars) < distances[j])) {
 				
+				//printf("dij if\n");
+				
 				distances[j] = distances[u] + routes[u][j].cars;
 				
 				previous[j] = u;
@@ -96,10 +99,14 @@ void dijkstra (int source, int destination, t_game* game, t_route routes[36][36]
 			else if (routes[u][j].exist == 1 && routes[u][j].free == game->me) {
 				distances[j] = 0;
 				
-				 previous[j] = u; //bof mais à voir plus tard
+				//printf("dij else if\n");
+
+				
+				previous[j] = u; //bof mais à voir plus tard
 			}
 		}
 		
+		//printf("u for\n");
 		u = distanceMini(distances, visited);
 	}
 	
@@ -107,7 +114,8 @@ void dijkstra (int source, int destination, t_game* game, t_route routes[36][36]
 		printf("%d\t", previous[i]);
 	}
 	printf("\n\n");*/
-	
+	//printf("end\n");
+
 }
 
 //after dijkstra, stores which routes we need in sourceToDest
@@ -115,7 +123,7 @@ int storeSourcetoDest (int source, int destination, int previous[36], int source
 	int city = destination;
 	int i = 0;
 	sourceToDest[i] = city;
-
+	
 	while (city != source) {
 		city = previous[city];
 		sourceToDest[i+1] = city;
@@ -183,6 +191,7 @@ void scanf_move(t_player* me) {
 
 //smart move to send to play_move
 void what_to_play(t_player* me, t_game* game, t_route routes[36][36], t_board* board, int route0[20], int lenght0, int* left0, int route1[20], int lenght1, int* left1) {
+//, int route2[20], int lenght2, int* left2
 	
 /*	THEN at each round
 	(=> check if we have completed (an) objective(s)
@@ -205,20 +214,16 @@ void what_to_play(t_player* me, t_game* game, t_route routes[36][36], t_board* b
 	
 	//printMap();
 	
+	int variable1 = 4, variable2 = 6;
 	
 	if (*left0 != 0) {
 		for (int i = 0; i < lenght0; i++) {
 			//O and 1 / then 1 and 2 / then 2 and 3
-			
-			//printf("couleur %d ou %d et wagons %d\n", routes[route0[i]][route0[i+1]].color1, routes[route0[i]][route0[i+1]].color2, routes[route0[i]][route0[i+1]].cars);
-			
+						
 			if (routes[route0[i]][route0[i+1]].free == 2) {
 				
+				//if enough cards of color1 to take route, we take it
 				if ((me->hand[routes[route0[i]][route0[i+1]].color1-1].number >= routes[route0[i]][route0[i+1]].cars) && (me->cars >= routes[route0[i]][route0[i+1]].cars))  {
-					
-					//printf("ma couleur %d nb wagons %d\n", me->hand[routes[route0[i]][route0[i+1]].color1-1].color, me->hand[routes[route0[i]][route0[i+1]].color1-1].number);
-					
-					//printf("color1\n");
 					me->move.type = CLAIM_ROUTE;
 					me->move.claimRoute.city1 = route0[i];
 					me->move.claimRoute.city2 = route0[i+1];
@@ -226,30 +231,277 @@ void what_to_play(t_player* me, t_game* game, t_route routes[36][36], t_board* b
 					//for now we won't use locomotives for non-locomotives routes
 					me->move.claimRoute.nbLocomotives = 0;
 					(*left0)--;
-					//printf("left0 dans fct\n");
 					play_move(me, game, routes, board);
 					return;
 				}
 				
-				else if ((me->hand[routes[route0[i]][route0[i+1]].color2-1].number >= routes[route0[i]][route0[i+1]].cars) && (me->cars >= routes[route0[i]][route0[i+1]].cars)) {
+				//if cards + 1 loco are enough to take route, we take it
+				if ((routes[route0[i]][route0[i+1]].color1 != MULTICOLOR) && (me->hand[routes[route0[i]][route0[i+1]].color1-1].number+1 >= routes[route0[i]][route0[i+1]].cars) && (me->hand[8].number >= 1) && (me->cars >= routes[route0[i]][route0[i+1]].cars)) {
 					
-					//printf("ma couleur %d nb wagons %d\n", me->hand[routes[route0[i]][route0[i+1]].color2-1].color, me->hand[routes[route0[i]][route0[i+1]].color2-1].number);
+					me->move.type = CLAIM_ROUTE;
+					me->move.claimRoute.city1 = route0[i];
+					me->move.claimRoute.city2 = route0[i+1];
+					me->move.claimRoute.color = routes[route0[i]][route0[i+1]].color1;
+					me->move.claimRoute.nbLocomotives = 1;
+					(*left0)--;
+					play_move(me, game, routes, board);
+					return;
+				}
+				
+				if ((routes[route0[i]][route0[i+1]].color1 == MULTICOLOR) && (routes[route0[i]][route0[i+1]].cars <= 2)) {
 					
-					//printf("color2\n");
+					for (int j = 1; j < 9; j++) {
+						
+						if (me->hand[j-1].number >= routes[route0[i]][route0[i+1]].cars + 1) {
+							
+							printf("NEW SUPER MOVE\n\n");
+							me->move.type = CLAIM_ROUTE;
+							me->move.claimRoute.city1 = route0[i];
+							me->move.claimRoute.city2 = route0[i+1];
+							me->move.claimRoute.color = j;
+							me->move.claimRoute.nbLocomotives = 0;
+							(*left0)--;
+							play_move(me, game, routes, board);
+							return;
+						}
+					}
+				}
+				
+				//if enough cards of color2 to take route, we take it
+				if (routes[route0[i]][route0[i+1]].color2 != 0 && (me->hand[routes[route0[i]][route0[i+1]].color2-1].number >= routes[route0[i]][route0[i+1]].cars) && (me->cars >= routes[route0[i]][route0[i+1]].cars)) {
 					me->move.type = CLAIM_ROUTE;
 					me->move.claimRoute.city1 = route0[i];
 					me->move.claimRoute.city2 = route0[i+1];
 					me->move.claimRoute.color = routes[route0[i]][route0[i+1]].color2;
 					me->move.claimRoute.nbLocomotives = 0;
 					(*left0)--;
-					//printf("left0 dans fct\n");
 					play_move(me, game, routes, board);
 					return;
+				}
+				
+				//if cards + 1 loco are enough to take route, we take it
+				if ((routes[route0[i]][route0[i+1]].color2 != 0) && (routes[route0[i]][route0[i+1]].color2 != MULTICOLOR) && (me->hand[routes[route0[i]][route0[i+1]].color2-1].number+1 >= routes[route0[i]][route0[i+1]].cars) && (me->hand[8].number >= 1) && (me->cars >= routes[route0[i]][route0[i+1]].cars)) {
+					
+					me->move.type = CLAIM_ROUTE;
+					me->move.claimRoute.city1 = route0[i];
+					me->move.claimRoute.city2 = route0[i+1];
+					me->move.claimRoute.color = routes[route0[i]][route0[i+1]].color2;
+					me->move.claimRoute.nbLocomotives = 1;
+					(*left0)--;
+					play_move(me, game, routes, board);
+					return;
+				}
+				
+				if ((routes[route0[i]][route0[i+1]].color2 != 0) && (routes[route0[i]][route0[i+1]].color2 == MULTICOLOR) && (routes[route0[i]][route0[i+1]].cars <= 2)) {
+					
+					for (int j = 1; j < 9; j++) {
+						
+						if (me->hand[j-1].number >= routes[route0[i]][route0[i+1]].cars + 1) {
+							
+							printf("NEW SUPER MOVE\n\n");
+							me->move.type = CLAIM_ROUTE;
+							me->move.claimRoute.city1 = route0[i];
+							me->move.claimRoute.city2 = route0[i+1];
+							me->move.claimRoute.color = j;
+							me->move.claimRoute.nbLocomotives = 0;
+							(*left0)--;
+							play_move(me, game, routes, board);
+							return;
+						}
+					}
 				}
 			}
 		}
 	}
 	
+
+	else if (*left0 == 0 && *left1 != 0) {
+		for (int i = 0; i < lenght1; i++) {
+			//O and 1 / then 1 and 2 / then 2 and 3
+						
+			if (routes[route1[i]][route1[i+1]].free == 2) {
+				
+				//if enough cards of color1 to take route, we take it
+				if ((me->hand[routes[route1[i]][route1[i+1]].color1-1].number >= routes[route1[i]][route1[i+1]].cars) && (me->cars >= routes[route1[i]][route1[i+1]].cars))  {
+					me->move.type = CLAIM_ROUTE;
+					me->move.claimRoute.city1 = route1[i];
+					me->move.claimRoute.city2 = route1[i+1];
+					me->move.claimRoute.color = routes[route1[i]][route1[i+1]].color1;
+					//for now we won't use locomotives for non-locomotives routes
+					me->move.claimRoute.nbLocomotives = 0;
+					(*left1)--;
+					play_move(me, game, routes, board);
+					return;
+				}
+				
+				//if cards + 1 loco are enough to take route, we take it
+				if ((routes[route1[i]][route1[i+1]].color1 != MULTICOLOR) && (me->hand[routes[route1[i]][route1[i+1]].color1-1].number+1 >= routes[route1[i]][route1[i+1]].cars) && (me->hand[8].number >= 1) && (me->cars >= routes[route1[i]][route1[i+1]].cars)) {
+										
+					me->move.type = CLAIM_ROUTE;
+					me->move.claimRoute.city1 = route1[i];
+					me->move.claimRoute.city2 = route1[i+1];
+					me->move.claimRoute.color = routes[route1[i]][route1[i+1]].color1;
+					me->move.claimRoute.nbLocomotives = 1;
+					(*left1)--;
+					play_move(me, game, routes, board);
+					return;
+				}
+				
+				if ((routes[route1[i]][route1[i+1]].color1 == MULTICOLOR) && (routes[route1[i]][route1[i+1]].cars <= 2)) {
+					
+					for (int j = 1; j < 9; j++) {
+						
+						if (me->hand[j-1].number >= routes[route1[i]][route1[i+1]].cars + 1) {
+							
+							printf("NEW SUPER MOVE\n\n");
+							me->move.type = CLAIM_ROUTE;
+							me->move.claimRoute.city1 = route1[i];
+							me->move.claimRoute.city2 = route1[i+1];
+							me->move.claimRoute.color = j;
+							me->move.claimRoute.nbLocomotives = 0;
+							(*left1)--;
+							play_move(me, game, routes, board);
+							return;
+						}
+					}
+				}
+				
+				//if enough cards of color2 to take route, we take it
+				if (routes[route1[i]][route0[i+1]].color2 != 0 && (me->hand[routes[route1[i]][route1[i+1]].color2-1].number >= routes[route1[i]][route1[i+1]].cars) && (me->cars >= routes[route1[i]][route1[i+1]].cars)) {
+					
+					me->move.type = CLAIM_ROUTE;
+					me->move.claimRoute.city1 = route1[i];
+					me->move.claimRoute.city2 = route1[i+1];
+					me->move.claimRoute.color = routes[route1[i]][route1[i+1]].color2;
+					me->move.claimRoute.nbLocomotives = 0;
+					(*left1)--;
+					play_move(me, game, routes, board);
+					return;
+				}
+				
+				//if cards + 1 loco are enough to take route, we take it
+				if ((routes[route1[i]][route0[i+1]].color2 != 0) && (routes[route1[i]][route1[i+1]].color2 != MULTICOLOR) && (me->hand[routes[route1[i]][route1[i+1]].color2-1].number+1 >= routes[route1[i]][route1[i+1]].cars) && (me->hand[8].number >= 1) && (me->cars >= routes[route1[i]][route1[i+1]].cars)) {
+										
+					me->move.type = CLAIM_ROUTE;
+					me->move.claimRoute.city1 = route1[i];
+					me->move.claimRoute.city2 = route1[i+1];
+					me->move.claimRoute.color = routes[route1[i]][route1[i+1]].color2;
+					me->move.claimRoute.nbLocomotives = 1;
+					(*left1)--;
+					play_move(me, game, routes, board);
+					return;
+				}
+				
+				if ((routes[route1[i]][route0[i+1]].color2 != 0) && (routes[route1[i]][route1[i+1]].color2 == MULTICOLOR) && (routes[route1[i]][route1[i+1]].cars <= 2)) {
+					
+					for (int j = 1; j < 9; j++) {
+						
+						if (me->hand[j-1].number >= routes[route1[i]][route1[i+1]].cars + 1) {
+							
+							printf("NEW SUPER MOVE\n\n");
+							me->move.type = CLAIM_ROUTE;
+							me->move.claimRoute.city1 = route1[i];
+							me->move.claimRoute.city2 = route1[i+1];
+							me->move.claimRoute.color = j;
+							me->move.claimRoute.nbLocomotives = 0;
+							(*left1)--;
+							play_move(me, game, routes, board);
+							return;
+						}
+					}
+				}
+				
+			}
+		}
+	}
+	/*
+	else if ((*left2 != 0 && *left0 == 0) || (*left2 != 0 && *left1 == 0)) {
+		for (int i = 0; i < lenght2; i++) {
+			//O and 1 / then 1 and 2 / then 2 and 3
+						
+			if (routes[route2[i]][route2[i+1]].free == 2) {
+				
+				if ((me->hand[routes[route2[i]][route2[i+1]].color1-1].number >= routes[route2[i]][route2[i+1]].cars) && (me->cars >= routes[route2[i]][route2[i+1]].cars))  {
+					
+					me->move.type = CLAIM_ROUTE;
+					me->move.claimRoute.city1 = route2[i];
+					me->move.claimRoute.city2 = route2[i+1];
+					me->move.claimRoute.color = routes[route2[i]][route2[i+1]].color1;
+					me->move.claimRoute.nbLocomotives = 0;
+					(*left2)--;
+					play_move(me, game, routes, board);
+					return;
+				}
+				
+				else if ((routes[route0[i]][route0[i+1]].color1 != 9) && (me->hand[routes[route2[i]][route2[i+1]].color1-1].number+1 >= routes[route2[i]][route2[i+1]].cars) && (me->hand[8].number >= 1) && (me->cars >= routes[route2[i]][route2[i+1]].cars)) {
+					
+					printf("city1 %d city2 %d\n", route1[i], route1[i+1]);
+
+					me->move.type = CLAIM_ROUTE;
+					me->move.claimRoute.city1 = route2[i];
+					me->move.claimRoute.city2 = route2[i+1];
+					me->move.claimRoute.color = routes[route2[i]][route2[i+1]].color1;
+					me->move.claimRoute.nbLocomotives = 1;
+					(*left2)--;
+					play_move(me, game, routes, board);
+					return;
+				}
+
+				else if (routes[route2[i]][route0[i+1]].color2 != 0 && (me->hand[routes[route2[i]][route2[i+1]].color2-1].number >= routes[route2[i]][route2[i+1]].cars) && (me->cars >= routes[route2[i]][route2[i+1]].cars)) {
+					me->move.type = CLAIM_ROUTE;
+					me->move.claimRoute.city1 = route2[i];
+					me->move.claimRoute.city2 = route2[i+1];
+					me->move.claimRoute.color = routes[route2[i]][route2[i+1]].color2;
+					me->move.claimRoute.nbLocomotives = 0;
+					(*left2)--;
+					play_move(me, game, routes, board);
+					return;
+				}
+			}
+		}
+	}*/
+	
+	else {
+		for (int line = 0; line < 36; line++) {
+			for (int column = 0; column < 36; column++) {
+				if (routes[line][column].exist == 1) {
+					
+					if (*left0 == 0) {
+						variable1 = 4;
+						variable2 = routes[line][column].cars;
+					}
+					
+					if (routes[line][column].free == 2 && routes[line][column].cars >= variable1) {
+						if (me->hand[routes[line][column].color1-1].number >= variable2 && (me->cars >= routes[line][column].cars)) {
+							
+							me->move.type = CLAIM_ROUTE;
+							me->move.claimRoute.city1 = line;
+							me->move.claimRoute.city2 = column;
+							me->move.claimRoute.color = routes[line][column].color1;
+							//for now we won't use locomotives for non-locomotives routes
+							me->move.claimRoute.nbLocomotives = 0;
+							play_move(me, game, routes, board);
+							printf("bonus\n");
+							return;
+						}
+						
+						else if (me->hand[routes[line][column].color2 - 1].number >= variable2 && (me->cars >= routes[line][column].cars)) {
+							
+							me->move.type = CLAIM_ROUTE;
+							me->move.claimRoute.city1 = line;
+							me->move.claimRoute.city2 = column;
+							me->move.claimRoute.color = routes[line][column].color2;
+							//for now we won't use locomotives for non-locomotives routes
+							me->move.claimRoute.nbLocomotives = 0;
+							play_move(me, game, routes, board);
+							printf("bonus\n");
+							return;
+						}
+					}
+				}
+			}
+		}
+	}
 	
 		//printf("blind card\n");
 		me->move.type = DRAW_BLIND_CARD;
@@ -257,13 +509,10 @@ void what_to_play(t_player* me, t_game* game, t_route routes[36][36], t_board* b
 		me->move.type = DRAW_BLIND_CARD;
 		play_move(me, game, routes, board);
 	
-	
-	
 	/*
 	printf("me 1st round\n");
 	scanf_move(me);
 	play_move(me, game, routes, board);
-	
 	if (me->replay == 1) {
 		printMap();
 		printf("me 2nd round\n");
@@ -282,6 +531,7 @@ void play_move(t_player* me, t_game* game, t_route routes[36][36], t_board* boar
 		//is it a legal move + draw the card and stores it if it is
 		me->legalMove = drawBlindCard(&me->move.drawBlindCard.card);
 		for (int i = 0; i < 9; i++) {
+			//i+1 is the real color number (ex: purple is 1, but stored in hand[0])
 			if (me->move.drawBlindCard.card == i+1) {
 				me->hand[i].number++;
 			}

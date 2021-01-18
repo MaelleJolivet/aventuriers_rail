@@ -12,11 +12,11 @@
 
 //initialize connexion and create board with map + nb of cities + nb of tracks
 t_board create_game() {
-	connectToServer("li1417-56.members.linode.com",1234,"Maeru");
+	connectToServer("li1417-56.members.linode.com",3456,"Maeru");
 	char* gameName = malloc(50*sizeof(char));
 	t_board board;
 	//map=small DO_NOTHING PLAY_RANDOM NICE_BOT
-	waitForT2RGame("TRAINING NICE_BOT timeout=50", gameName, &board.nbCities, &board.nbTracks);
+	waitForT2RGame("TRAINING NICE_BOT timeout=200", gameName, &board.nbCities, &board.nbTracks);
 	printf("gameName : %s\n", gameName);
 	board.tracks = malloc(5*(board.nbTracks)*sizeof(int));
 	free(gameName);
