@@ -21,7 +21,7 @@ t_board create_game() {
 	board.tracks = malloc(5*(board.nbTracks)*sizeof(int));
 	free(gameName);
 	return board;
-}
+} 
 
 //initialize the map : 1st player, cards face up, our hand, fill the map with the cities
 t_game create_map(t_board* board, t_color initial_hand[]) {
