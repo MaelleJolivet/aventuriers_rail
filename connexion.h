@@ -77,9 +77,11 @@ void array_routes(t_route routes[36][36], t_board* board);
 //ask and register our move
 void scanf_move(t_player* me);
 
+//
+void prepare_claim(t_player* me, int color, int city_1, int city_2, int loco);
+
 //smart move to send to play_move
-void what_to_play(t_player* me, t_game* game, t_route routes[36][36], t_board* board, int route0[20], int lenght0, int* left0, int route1[20], int lenght1, int* left1);
-//, int route2[20], int lenght2, int* left2
+void what_to_play(t_player* me, t_player* opponent, t_game* game, t_route routes[36][36], t_board* board, int route0[10], int lenght0, int* left0, int route1[10], int lenght1, int* left1);
 
 //play the chosen move
 void play_move(t_player* me, t_game* game, t_route routes[36][36], t_board* board);
@@ -89,4 +91,4 @@ int distanceMini (int distances[36], int visited[36]);
 
 void dijkstra (int source, int destination, t_game* game, t_route routes[36][36], int distances[36], int previous[36]);
 
-int storeSourcetoDest (int source, int destination, int previous[36], int sourceToDest[78], t_route routes[36][36]);
+int storeSourcetoDest (int source, int destination, int previous[36], int sourceToDest[10], t_route routes[36][36]);
