@@ -14,7 +14,7 @@
 
 int main () {
 	
-	connectToServer("li1417-56.members.linode.com",5678,"Maeru");
+	connectToServer("li1417-56.members.linode.com",1234,"Maeru");
 	
 	t_board board;
 	t_color initial_hand[4];
@@ -22,16 +22,15 @@ int main () {
 	t_route routes[36][36];
 	t_player me, opponent;
 	
+	//infinity boucle to play in tournament
 	while (1) {
 		
 		//Initialization and get map's info
 		board = create_game();
-
 		game = create_map(&board, initial_hand);
 		
 		//array 2D of t_route => 36 cities
 		//ex: routes[0][8] & routes[8][0] are the same t_route, who contains all the route's info
-		
 		array_routes(routes, &board);
 
 		//create players and initialize infos
@@ -50,9 +49,7 @@ int main () {
 				}
 			}
 		}
-		
 		int first_round = 1;
-		//int last_round = 0;
 		
 		//after dijkstra, stores the routes we want for each objectives
 		//for me.objectives[0] and me.objectives[1]
@@ -65,15 +62,13 @@ int main () {
 
 		//Play the game as long as no one loses or wins (LOOSING_MOVE or WINNING_MOVE)
 		while (opponent.legalMove == NORMAL_MOVE && me.legalMove == NORMAL_MOVE) {
-			printMap();
+			//printMap();
 			printf("New round\n");
-			//printf("after while\n");
 			
 			//begin smart play => first 2 moves HAVE to be draw&choose objectives
 			if (opponent.legalMove == NORMAL_MOVE && me.legalMove == NORMAL_MOVE && game.current_player == game.me && me.replay == 0) {
 				
 				if (first_round == 1) {
-					printf("1st move is Draw Objectives\n");
 					me.move.type = DRAW_OBJECTIVES;
 					play_move(&me, &game, routes, &board);
 					
@@ -86,44 +81,40 @@ int main () {
 					
 					first_round = 0;
 					
-					int first_dude, second_dude;
+					int first_obj, second_obj;
 					if (me.objectives[0].score >= me.objectives[1].score) {
-						first_dude = 0;
-						second_dude = 1;
+						first_obj = 0;
+						second_obj = 1;
 					}
 					else {
-						first_dude = 1;
-						second_dude = 0;
+						first_obj = 1;
+						second_obj = 0;
 					}
 					
 					//immediatly run the shorter paths algo to found which routes we want
 					
 					//1st objective
-					dijkstra(me.objectives[first_dude].city1, me.objectives[first_dude].city2, &game, routes, distances_0, previous_0);
+					dijkstra(me.objectives[first_obj].city1, me.objectives[first_obj].city2, &game, routes, distances_0, previous_0);
 					
-					lenght0 = storeSourcetoDest(me.objectives[first_dude].city1, me.objectives[first_dude].city2, previous_0, routes_objective_0, routes);
+					lenght0 = storeSourcetoDest(me.objectives[first_obj].city1, me.objectives[first_obj].city2, previous_0, routes_objective_0, routes);
 					left0 = lenght0 - 1;
 					
 					
 					//2nd objective
-					dijkstra(me.objectives[second_dude].city1, me.objectives[second_dude].city2, &game, routes, distances_1, previous_1);
+					dijkstra(me.objectives[second_obj].city1, me.objectives[second_obj].city2, &game, routes, distances_1, previous_1);
 					
-					lenght1 = storeSourcetoDest(me.objectives[second_dude].city1, me.objectives[second_dude].city2, previous_1, routes_objective_1, routes);
+					lenght1 = storeSourcetoDest(me.objectives[second_obj].city1, me.objectives[second_obj].city2, previous_1, routes_objective_1, routes);
 					left1 = lenght1 - 1;
 				}
 				
 				else {
 						what_to_play(&me, &opponent, &game, routes, &board, routes_objective_0, lenght0, &left0, routes_objective_1, lenght1, &left1);
 				}
-				
-				//printf("NEXT ROUND\n\n");
 				game.current_player = !(game.current_player);
-
 			}
 			
 			else if (opponent.legalMove == NORMAL_MOVE && me.legalMove == NORMAL_MOVE && game.current_player == !(game.me) && opponent.replay == 0) {
-				//printMap();
-
+				
 				opponent.legalMove = getMove(&opponent.move, &opponent.replay);
 				
 				if (opponent.move.type == 1) {
@@ -150,12 +141,9 @@ int main () {
 				if (opponent.replay == 1) {
 					opponent.legalMove = getMove(&opponent.move, &opponent.replay);
 				}
-				
 				game.current_player = !(game.current_player);
 			}
-			//printf("???\n");
 		}
-		//printf("out of infinity boucle\n");
 		free(me.objectives);
 	}
 
@@ -166,33 +154,7 @@ int main () {
 	return 0;
 }
 
-
-
-
-
-/*//3rd objective
-dijkstra(me.objectives[2].city1, me.objectives[2].city2, &game, routes, distances_2, previous_2);
-
-lenght2 = storeSourcetoDest(me.objectives[2].city1, me.objectives[2].city2, previous_2, routes_objective_2, routes);
-left2 = lenght2 - 1;*/
-
-/*
-	if (opponent.legalMove != 0) {
-		printf("Bot lost\n");
-	}
-	if (me.legalMove != 0) {
-		printf("Maeru lost\n");
-	}*/
-	
-
-
-
-/*else if ((routes_objective_2[i] == opponent.move.claimRoute.city1 && routes_objective_2[i+1] == opponent.move.claimRoute.city2) || (routes_objective_2[i] == opponent.move.claimRoute.city2 && routes_objective_2[i+1] == opponent.move.claimRoute.city1)) {
-	left2 = 0;
-	printf("CAN'T COMPLETE OBJECTIVE 2\n\n");
-}*/
-
-
+//old main : without infinty boucle (only plays 1 game)
 /*int main () {
  
  //Initialization and get map's info

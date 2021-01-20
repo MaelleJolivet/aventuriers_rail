@@ -14,7 +14,8 @@
 t_board create_game() {
 	char* gameName = malloc(50*sizeof(char));
 	t_board board;
-	//map=small DO_NOTHING PLAY_RANDOM NICE_BOT
+	//TRAINING DO_NOTHING / PLAY_RANDOM / NICE_BOT
+	//TOURNAMENT xxxx
 	waitForT2RGame("TRAINING NICE_BOT timeout=100", gameName, &board.nbCities, &board.nbTracks);
 	printf("gameName : %s\n", gameName);
 	board.tracks = malloc(5*(board.nbTracks)*sizeof(int));
@@ -26,18 +27,12 @@ t_board create_game() {
 t_game create_map(t_board* board, t_color initial_hand[]) {
 	t_game game;
 	game.me = getMap(board->tracks, game.faceUp, initial_hand);
-	
-	//info for first route
-	for (int i = 0; i < 5; i++) {
-		//printf("%d\t", board->tracks[i]);
-	}
-	
 	game.board = *board;
 	game.current_player = 0;
 	return game;
 }
 
-//create a player
+//create and initialize a player
 t_player create_player() {
 	t_player player;
 	player.cars = 45;
@@ -93,7 +88,6 @@ void array_routes(t_route routes[36][36], t_board* board) {
 		routes[city1][city2].free = 2;
 		
 		routes[city2][city1] = routes[city1][city2];
-		
 	}
 }
 

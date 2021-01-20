@@ -53,13 +53,13 @@ typedef struct {
 } t_game;
 
 
-//initialize connexion and create board with map + nb of cities + b of tracks
+//initialize connexion and create board with map + nb of cities + nb of tracks
 t_board create_game();
 
 //initialize the map : 1st player, cards face up, our hand, fill the map with the cities
 t_game create_map(t_board* board, t_color initial_hand[]);
 
-//create a player
+//create and initialize a player
 t_player create_player();
 
 //display the two cities to claim, and the score given (substracted) if success (failure)
@@ -77,7 +77,10 @@ void array_routes(t_route routes[36][36], t_board* board);
 //ask and register our move
 void scanf_move(t_player* me);
 
-//
+//unused, would return bool 1 if our 2 objectives or connected (1 city or 1 route in commun)
+int objectives_connected(t_player* me, t_game* game, t_route routes[36][36], int route0[10], int lenght0, int route1[10], int lenght1);
+
+//to prepare the move claimroute
 void prepare_claim(t_player* me, int color, int city_1, int city_2, int loco);
 
 //smart move to send to play_move
@@ -86,9 +89,11 @@ void what_to_play(t_player* me, t_player* opponent, t_game* game, t_route routes
 //play the chosen move
 void play_move(t_player* me, t_game* game, t_route routes[36][36], t_board* board);
 
-
+//id closest city unvisited
 int distanceMini (int distances[36], int visited[36]);
 
+//shortest path from source to destination
 void dijkstra (int source, int destination, t_game* game, t_route routes[36][36], int distances[36], int previous[36]);
 
+//after dijkstra, stores which routes we need in sourceToDest, returns size of sourceToDest (10 being the maximum)
 int storeSourcetoDest (int source, int destination, int previous[36], int sourceToDest[10], t_route routes[36][36]);
